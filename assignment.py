@@ -1,9 +1,13 @@
 import glm
 import random
 import numpy as np
+import calibrate
 
 block_size = 1.0
 
+checkerBoardWidth = 8
+checkerBoardHeight = 6
+checkerBoardSquareSize = 115
 
 def generate_grid(width, depth):
     # Generates the floor grid locations

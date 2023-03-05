@@ -107,10 +107,14 @@ def subtractBackground(camName):
     f.write(str(thresholdH) + "\n")
     f.write(str(thresholdS) + "\n")
     f.write(str(thresholdV) + "\n")
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.array([[0, 1, 0],
+                       [1, 1, 1],
+                       [0, 1, 0]], dtype=np.uint8)
+
+    foreground = cv.erode(foreground, kernel)
+    kernel = np.ones((2, 8), np.uint8)
     foreground = cv.dilate(foreground, kernel)
-    foreground = cv.erode(foreground, kernel)
-    foreground = cv.erode(foreground, kernel)
+    kernel = np.reshape(kernel, (8, 2))
     foreground = cv.dilate(foreground, kernel)
     cv.imshow('img', foreground)
     cv.imwrite('data/' + camName + '/foreground.jpg', foreground)

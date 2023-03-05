@@ -134,11 +134,14 @@ def get_foreground(frame, background, cam):
     _, background = cv.threshold(tmp, cam.v, 255, cv.THRESH_BINARY)
     foreground = cv.bitwise_or(foreground, background)
 
-    kernel = np.ones((5, 5), np.uint8)
+    kernel = np.array([[0, 1, 0],
+                       [1, 1, 1],
+                       [0, 1, 0]], dtype=np.uint8)
 
+    foreground = cv.erode(foreground, kernel)
+    kernel = np.ones((2, 8), np.uint8)
     foreground = cv.dilate(foreground, kernel)
-    foreground = cv.erode(foreground, kernel)
-    foreground = cv.erode(foreground, kernel)
+    kernel = np.reshape(kernel, (8, 2))
     foreground = cv.dilate(foreground, kernel)
 
     return foreground

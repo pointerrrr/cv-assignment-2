@@ -63,10 +63,10 @@ def set_voxel_positions(width, height, depth):
 
     for cam in cameras:
         background = cv.imread('data/' + camName + '/background_avg.jpg')
-        vid = cv.VideoCapture('data/' + cam.camName + '/preMask.jpg', "video.avi")
-        frame = vid.read()
+        vid = cv.VideoCapture('data/' + cam.camName + "/video.avi")
+        ret, frame = vid.read()
 
-        cv.imshow(get_foreground(frame, background, cam))
+        cv.imshow('img', get_foreground(frame, background, cam))
         cv.waitKey(5000)
 
     for cam in cameras:
@@ -164,16 +164,16 @@ def load_cam_mat(camName):
     return np.load('data/' + camName + '/camMat.npy')
 
 def load_cam_h(camName):
-    f = open('data/' + camName + '/hsv.txt', "x")
+    f = open('data/' + camName + '/hsv.txt', "r")
     x = f.readlines()
     return int(x[0])
 
 def load_cam_s(camName):
-    f = open('data/' + camName + '/hsv.txt', "x")
+    f = open('data/' + camName + '/hsv.txt', "r")
     x = f.readlines()
     return int(x[1])
 
 def load_cam_v(camName):
-    f = open('data/' + camName + '/hsv.txt', "x")
+    f = open('data/' + camName + '/hsv.txt', "r")
     x = f.readlines()
     return int(x[2])

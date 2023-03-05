@@ -12,12 +12,15 @@ checkerBoardSquareSize = 115
 
 
 class Camera:
-    def __init__(self, camName, mat, dist, tvec, rvec):
+    def __init__(self, camName, mat, dist, tvec, rvec, h, s, v):
         self.camName = camName
         self.mat = mat
         self.dist = dist
         self.tvec = tvec
         self.rvec = rvec
+        self.h = h
+        self.s = s
+        self.v = v
 
 
 def generate_grid(width, depth):
@@ -50,10 +53,21 @@ def set_voxel_positions(width, height, depth):
         dist = load_cam_dist(camName)
         rvec = load_cam_rot(camName)
         tvec = load_cam_pos(camName)
-        cam = Camera(camName, mat, dist, tvec, rvec)
+        h = load_cam_h(camName)
+        s = load_cam_s(camName)
+        v = load_cam_v(camName)
+        cam = Camera(camName, mat, dist, tvec, rvec, h , s, v)
         cameras.append(cam)
 
     projections = []
+
+    for cam in cameras:
+        background = cv.imread('data/' + camName + '/background_avg.jpg')
+        vid = cv.VideoCapture('data/' + cam.camName + '/preMask.jpg', "video.avi")
+        frame = vid.read()
+
+        cv.imshow(get_foreground(frame, background, cam))
+        cv.waitKey(5000)
 
     for cam in cameras:
         projections.append(cv.projectPoints(data, cam.rvec, cam.tvec, cam.mat, cam.dist)[0])
@@ -66,6 +80,32 @@ def set_voxel_positions(width, height, depth):
 
     return data
 
+def get_foreground(frame, background, cam):
+    hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
+    hsv_background = cv.cvtColor(background, cv.COLOR_BGR2HSV)
+
+    frame_channels = cv.split(hsv_frame)
+    background_channels = cv.split(hsv_background)
+
+    tmp = cv.absdiff(frame_channels[0], background_channels[0])
+    _, foreground = cv.threshold(tmp, cam.h, 255, cv.THRESH_BINARY)
+
+    tmp = cv.absdiff(frame_channels[1], background_channels[1])
+    _, background = cv.threshold(tmp, cam.s, 255, cv.THRESH_BINARY)
+    foreground = cv.bitwise_and(foreground, background)
+
+    tmp = cv.absdiff(frame_channels[2], background_channels[2])
+    _, background = cv.threshold(tmp, cam.v, 255, cv.THRESH_BINARY)
+    foreground = cv.bitwise_or(foreground, background)
+
+    kernel = np.ones((5, 5), np.uint8)
+
+    foreground = cv.dilate(foreground, kernel)
+    foreground = cv.erode(foreground, kernel)
+    foreground = cv.erode(foreground, kernel)
+    foreground = cv.dilate(foreground, kernel)
+
+    return foreground
 
 def get_cam_positions():
     cam1pos = get_cam_pos("cam1")
@@ -123,4 +163,17 @@ def load_cam_dist(camName):
 def load_cam_mat(camName):
     return np.load('data/' + camName + '/camMat.npy')
 
+def load_cam_h(camName):
+    f = open('data/' + camName + '/hsv.txt', "x")
+    x = f.readlines()
+    return int(x[0])
 
+def load_cam_s(camName):
+    f = open('data/' + camName + '/hsv.txt', "x")
+    x = f.readlines()
+    return int(x[1])
+
+def load_cam_v(camName):
+    f = open('data/' + camName + '/hsv.txt', "x")
+    x = f.readlines()
+    return int(x[2])

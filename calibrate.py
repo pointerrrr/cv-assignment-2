@@ -38,16 +38,15 @@ def click_event(event, x, y, flags, params):
         corners3.append([x, y])
 
 def startCamCalibration(camName):
-    path = Path('data/' + camName + '/config.txt')
+    path = Path('data/' + camName + '/camMat.npy')
     if not path.is_file():
         cami = cv.VideoCapture('data/' + camName + '/intrinsics.avi')
         came = cv.VideoCapture('data/' + camName + '/checkerboard.avi')
         camMatrix, camDistortion, camrvec, camtvecs = calibrateCam(cami, came)
-        f = open('data/' + camName + '/config.txt', "x")
-        f.write(np.array2string(camMatrix) + "\n")
-        f.write(np.array2string(camDistortion) + "\n")
-        f.write(np.array2string(camrvec) + "\n")
-        f.write(np.array2string(camtvecs) + "\n")
+        np.save('data/' + camName + '/camMat', camMatrix)
+        np.save('data/' + camName + '/camDist', camDistortion)
+        np.save('data/' + camName + '/camRvec', camrvec)
+        np.save('data/' + camName + '/camTvec', camtvecs)
 
 def main():
     startCamCalibration('cam1')

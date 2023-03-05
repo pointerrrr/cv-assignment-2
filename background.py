@@ -36,6 +36,9 @@ def avgBackground(camName):
         cv.imwrite('data/' + camName + '/background_avg.jpg', dst)
 
 def subtractBackground(camName):
+    path = Path('data/' + camName + '/hsv.txt')
+    if path.is_file():
+       return
     thresholdH = 0
     thresholdS = 0
     thresholdV = 0
@@ -100,7 +103,17 @@ def subtractBackground(camName):
                     thresholdV = v
 
     print('H: ' + str(thresholdH) + ' S: ' + str(thresholdS) + ' V: ' + str(thresholdV))
+    f = open('data/' + camName + '/hsv.txt', "x")
+    f.write(str(thresholdH) + "\n")
+    f.write(str(thresholdS) + "\n")
+    f.write(str(thresholdV) + "\n")
+    kernel = np.ones((5, 5), np.uint8)
+    foreground = cv.dilate(foreground, kernel)
+    foreground = cv.erode(foreground, kernel)
+    foreground = cv.erode(foreground, kernel)
+    foreground = cv.dilate(foreground, kernel)
     cv.imshow('img', foreground)
+    cv.imwrite('data/' + camName + '/foreground.jpg', foreground)
     cv.waitKey(5000)
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ import numpy as np
 import cv2 as cv
 import calibrate
 
-block_size = 1.0
+block_size = 1
 
 checkerBoardWidth = 8
 checkerBoardHeight = 6
@@ -33,15 +33,24 @@ def generate_grid(width, depth):
     return data
 
 
+gridWidth = 40
+gridHeight = 40
+gridDepth = 40
+
 def set_voxel_positions(width, height, depth):
     # Generates random voxel locations
     # TODO: You need to calculate proper voxel arrays instead of random ones.
     data = []
-    for x in range(-18, 22):
-        for y in range(0, 25):
-            for z in range(-20, 20):
-                data.append([x*block_size, y*block_size, z*block_size])
-
+    maxWidth = int(gridWidth / block_size)
+    maxHeight = int(gridHeight / block_size)
+    maxDepth = int(gridDepth / block_size)
+    for x in range(maxWidth):
+        for y in range(maxHeight):
+            for z in range(maxDepth):
+                newX = x * block_size - 18.0
+                newY = y * block_size
+                newZ = z * block_size - 20.0
+                data.append([newX, newY, newZ])
 
     data = np.array(data)
     camNames = ["cam1", "cam2", "cam3", "cam4"]
@@ -56,29 +65,56 @@ def set_voxel_positions(width, height, depth):
         h = load_cam_h(camName)
         s = load_cam_s(camName)
         v = load_cam_v(camName)
-        cam = Camera(camName, mat, dist, tvec, rvec, h , s, v)
+        cam = Camera(camName, mat, dist, tvec, rvec, h, s, v)
         cameras.append(cam)
 
     projections = []
+
+    foregrounds = []
+    foregroundSizes = []
+
 
     for cam in cameras:
         background = cv.imread('data/' + cam.camName + '/background_avg.jpg')
         vid = cv.VideoCapture('data/' + cam.camName + "/video.avi")
         ret, frame = vid.read()
 
-        cv.imshow('img', get_foreground(frame, background, cam))
-        cv.waitKey(5000)
+        foregrounds.append(get_foreground(frame, background, cam))
+        foregroundSizes.append(frame.shape)
+
+        #cv.imshow('img', foregrounds[-1])
+        #cv.waitKey(5000)
 
     for cam in cameras:
         projections.append(cv.projectPoints(data, cam.rvec, cam.tvec, cam.mat, cam.dist)[0])
 
     for vidx, voxel in enumerate(data):
-        voxelCoord = (voxel[0],voxel[1],voxel[2])
+        voxelCoord = (voxel[0], voxel[1], voxel[2])
         lookupTable[voxelCoord] = []
         for cidx, cam in enumerate(cameras):
             lookupTable[voxelCoord].append(projections[cidx][vidx])
 
-    return data
+    on = np.full(len(data), True)
+    for i in range(len(data)):
+        for j in range(1):
+            voxel = data[i]
+            voxelCoord = (voxel[0], voxel[1], voxel[2])
+            pixCoords = lookupTable[voxelCoord][j][0]
+            px, py = int(pixCoords[0]), int(pixCoords[1])
+            if px < 0 or py < 0 or px >= foregroundSizes[j][0] or py >= foregroundSizes[j][1]:
+                on[i] = False
+            elif foregrounds[j][px, py] == 0:
+                on[i] = False
+            else:
+                continue
+
+    result = []
+
+    for i in range(len(data)):
+        if on[i]:
+            result.append(data[i])
+
+    return result
 
 def get_foreground(frame, background, cam):
     hsv_frame = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
@@ -132,7 +168,6 @@ def get_cam_rotation_matrices():
 def get_cam_pos(camName):
     rvec = load_cam_rot(camName)
     tvec = load_cam_pos(camName)
-    tvec /= checkerBoardSquareSize
     rotation_matrix = cv.Rodrigues(rvec)[0]
     return -np.matrix(rotation_matrix).T * np.matrix(tvec)
 
@@ -149,7 +184,8 @@ def get_cam_rot(camName):
 
 
 def load_cam_pos(camName):
-    return np.load('data/' + camName + '/camTvec.npy')
+    array = np.load('data/' + camName + '/camTvec.npy')
+    return array / checkerBoardSquareSize
 
 
 def load_cam_rot(camName):

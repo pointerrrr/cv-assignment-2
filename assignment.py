@@ -62,7 +62,7 @@ def set_voxel_positions(width, height, depth):
     projections = []
 
     for cam in cameras:
-        background = cv.imread('data/' + camName + '/background_avg.jpg')
+        background = cv.imread('data/' + cam.camName + '/background_avg.jpg')
         vid = cv.VideoCapture('data/' + cam.camName + "/video.avi")
         ret, frame = vid.read()
 
